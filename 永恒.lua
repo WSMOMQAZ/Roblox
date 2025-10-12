@@ -16259,6 +16259,43 @@ LPH_JIT_MAX(function()
 
 		-- ☆ //   ui   // ☆ --
 
+		do
+			local tab = window:tab({name = 'Client'; icon = 'rbxassetid://131600725328350'; type = 'normal'});
+			do
+				local group = tab:group('Client');
+				do
+					local section = group:section({icon = 'rbxassetid://131600725328350'; text = 'Main'; divider = 1});
+					do
+						local group = section:group(1);
+						do
+							if (getrawmetatable) then
+								group:toggle({flag = 'anti_drown'; text = 'Anti Drown'});
+							end;
+							group:toggle({flag = 'tp_tool'; text = 'Teleport Tool'});
+							group:toggle({flag = 'noclip'; text = 'NoClip'});
+							group:toggle({flag = 'inf_jump'; text = 'Infinite Jump'});
+							group:toggle({flag = 'anti_blacklist'; text = 'Anti Blacklist'});
+						end;
+
+						local group = section:group(1);
+						do
+							group:toggle({flag = 'fly'; text = 'Fly'});
+							group:slider({flag = 'fly_speed'; text = 'Fly Speed'; min = 0; max = 10; float = 1; default = 5; suffix = 'st'});
+							group:toggle({flag = 'fly_bypass'; text = 'Fly Bypass'; default = true});
+						end;
+
+						local group = section:group(1);
+						do
+							group:toggle({flag = 'speedhack'; text = 'Speed Hack'});
+							group:slider({flag = 'speedhack_speed'; text = 'Speed'; min = 0; max = 200; float = 1; default = 16; suffix = 'st'});
+						end;
+
+						local group = section:group(1);
+						do
+							group:toggle({flag = 'jumphack'; text = 'Custom Jump Power'});
+							group:slider({flag = 'jumphack_power'; text = 'Power'; min = 0; max = 500; float = 1; default = 50; suffix = 'st'});
+						end;
+					end;
 
 					local section = group:section({icon = 'rbxassetid://79504833819397'; text = 'Teleports'; divider = (game.name == 'Refinery Caves 2' and 2 or 1)});
 					do
