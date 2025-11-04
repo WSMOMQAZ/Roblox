@@ -1,4 +1,4 @@
--- ShadowEtcher ESP + 名字标签 "灰色斧"
+-- ShadowEtcher ESP + 名字标签 "灰色斧"（优化版）
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
@@ -7,7 +7,7 @@ local localPlayer = Players.LocalPlayer
 
 -- 配置
 local enabled = true
-local scanInterval = 1.0
+local scanInterval = 2.0 -- 扫描间隔增加
 local fillTransparency = 0.6
 local outlineTransparency = 0.0
 local highlightColor = Color3.fromRGB(255, 100, 0)
@@ -21,7 +21,7 @@ local applied = {}
 -- 为 BasePart 添加 Highlight
 local function addHighlightToPart(part)
     if not part or not part:IsA("BasePart") then return nil end
-    if applied[part] then return end
+    if applied[part] then return applied[part].Highlights[1] end
     local h = Instance.new("Highlight")
     h.Adornee = part
     h.Name = "ShadowEtcher_Highlight"
@@ -30,7 +30,7 @@ local function addHighlightToPart(part)
     h.OutlineTransparency = outlineTransparency
     h.FillColor = highlightColor
     h.OutlineColor = outlineColor
-    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    h.DepthMode = Enum.HighlightDepthMode.Occluded -- 改为 Occluded
     applied[part] = {Highlights = {h}}
     return h
 end
@@ -64,7 +64,7 @@ local function addHighlightAndNameToModel(model)
         textLabel.TextColor3 = nameTextColor
         textLabel.TextStrokeTransparency = 0
         textLabel.Font = Enum.Font.SourceSansBold
-        textLabel.TextScaled = true
+        textLabel.TextSize = nameTextSize -- 使用固定字体大小
         textLabel.Text = "灰色斧"
         textLabel.Parent = billboard
     end
@@ -104,7 +104,7 @@ end
 local function scanWorkspaceAndApply()
     if not enabled then return end
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        if (obj:IsA("Model") or obj:IsA("BasePart")) and isTargetObject(obj) then
+        if (obj:IsA("Model") or obj:IsA("BasePart")) and isTargetObject(obj) and not applied[obj] then
             if obj:IsA("Model") then
                 addHighlightAndNameToModel(obj)
             else
@@ -118,7 +118,7 @@ end
 Workspace.DescendantAdded:Connect(function(desc)
     if not enabled then return end
     task.defer(function()
-        if isTargetObject(desc) then
+        if isTargetObject(desc) and not applied[desc] then
             if desc:IsA("Model") then
                 addHighlightAndNameToModel(desc)
             elseif desc:IsA("BasePart") then
@@ -152,4 +152,4 @@ end)
 
 -- 启动立即扫描
 scanWorkspaceAndApply()
-print("ShadowEtcher ESP + 名字标签“灰色斧”已启动。")
+print("ShadowEtcher ESP + 名字标签“灰色斧”（优化版）已启动。")
