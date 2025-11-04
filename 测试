@@ -1,25 +1,27 @@
--- ShadowEtcher ESP + 名字标签 "灰色斧"（多实例优化版）
+-- ShadowEtcher ESP + 名字标签 "灰色斧"（优化版）
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local localPlayer = Players.LocalPlayer
 
 -- 配置
 local enabled = true
-local highlightColor = Color3.fromRGB(255, 100, 0)
-local outlineColor = Color3.fromRGB(255, 255, 255)
+local scanInterval = 2.0 -- 扫描间隔增加
 local fillTransparency = 0.6
 local outlineTransparency = 0.0
-local nameTextColor = Color3.fromRGB(180, 180, 180)
+local highlightColor = Color3.fromRGB(255, 100, 0)
+local outlineColor = Color3.fromRGB(255, 255, 255)
+local nameTextColor = Color3.fromRGB(180, 180, 180) -- 灰色
 local nameTextSize = 18
-local fullModelHighlight = false -- 是否全模型高亮，false = 仅 Head/PrimaryPart
 
--- 保存每个 ShadowEtcher 的数据
+-- 保存每个对象的 {Highlights, BillboardGui}
 local applied = {}
 
 -- 为 BasePart 添加 Highlight
-local function addHighlight(part)
+local function addHighlightToPart(part)
     if not part or not part:IsA("BasePart") then return nil end
+    if applied[part] then return applied[part].Highlights[1] end
     local h = Instance.new("Highlight")
     h.Adornee = part
     h.Name = "ShadowEtcher_Highlight"
@@ -28,39 +30,33 @@ local function addHighlight(part)
     h.OutlineTransparency = outlineTransparency
     h.FillColor = highlightColor
     h.OutlineColor = outlineColor
-    h.DepthMode = Enum.HighlightDepthMode.Occluded
+    h.DepthMode = Enum.HighlightDepthMode.Occluded -- 改为 Occluded
+    applied[part] = {Highlights = {h}}
     return h
 end
 
 -- 为模型添加高亮和名字标签
-local function addHighlightAndName(model)
+local function addHighlightAndNameToModel(model)
     if not model or applied[model] then return end
     local highlights = {}
-
-    if fullModelHighlight then
-        for _, part in ipairs(model:GetDescendants()) do
-            if part:IsA("BasePart") then
-                table.insert(highlights, addHighlight(part))
-            end
-        end
-    else
-        local mainPart = model:FindFirstChild("Head") or model.PrimaryPart
-        if mainPart then
-            table.insert(highlights, addHighlight(mainPart))
+    for _, descendant in ipairs(model:GetDescendants()) do
+        if descendant:IsA("BasePart") then
+            local h = addHighlightToPart(descendant)
+            if h then table.insert(highlights, h) end
         end
     end
 
     -- 添加名字标签
-    local mainPart = model:FindFirstChild("Head") or model.PrimaryPart
+    local headPart = model:FindFirstChild("Head") or model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
     local billboard
-    if mainPart then
+    if headPart then
         billboard = Instance.new("BillboardGui")
         billboard.Name = "ShadowEtcher_NameTag"
-        billboard.Adornee = mainPart
+        billboard.Adornee = headPart
         billboard.Size = UDim2.new(0, 100, 0, 25)
         billboard.StudsOffset = Vector3.new(0, 3, 0)
         billboard.AlwaysOnTop = true
-        billboard.Parent = mainPart
+        billboard.Parent = headPart
 
         local textLabel = Instance.new("TextLabel")
         textLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -68,7 +64,7 @@ local function addHighlightAndName(model)
         textLabel.TextColor3 = nameTextColor
         textLabel.TextStrokeTransparency = 0
         textLabel.Font = Enum.Font.SourceSansBold
-        textLabel.TextSize = nameTextSize
+        textLabel.TextSize = nameTextSize -- 使用固定字体大小
         textLabel.Text = "灰色斧"
         textLabel.Parent = billboard
     end
@@ -77,7 +73,7 @@ local function addHighlightAndName(model)
 end
 
 -- 移除高亮和名字标签
-local function removeApplied(inst)
+local function removeHighlightsForInstance(inst)
     if not inst then return end
     local data = applied[inst]
     if data then
@@ -93,24 +89,40 @@ local function removeApplied(inst)
     end
 end
 
--- 判断是否为 ShadowEtcher
-local function isShadowEtcher(obj)
+-- 判断目标对象
+local function isTargetObject(obj)
     if not obj then return false end
     if obj:IsA("Model") and obj.Name == "ShadowEtcher" then return true end
     if obj:IsA("BasePart") and obj.Name == "ShadowEtcher" then return true end
+    for _, d in ipairs(obj:GetDescendants()) do
+        if d.Name == "ShadowEtcher" then return true end
+    end
     return false
 end
 
--- 监听新对象加入
+-- 扫描 Workspace
+local function scanWorkspaceAndApply()
+    if not enabled then return end
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if (obj:IsA("Model") or obj:IsA("BasePart")) and isTargetObject(obj) and not applied[obj] then
+            if obj:IsA("Model") then
+                addHighlightAndNameToModel(obj)
+            else
+                addHighlightToPart(obj)
+            end
+        end
+    end
+end
+
+-- 监听新加入对象
 Workspace.DescendantAdded:Connect(function(desc)
     if not enabled then return end
     task.defer(function()
-        if isShadowEtcher(desc) and not applied[desc] then
+        if isTargetObject(desc) and not applied[desc] then
             if desc:IsA("Model") then
-                addHighlightAndName(desc)
+                addHighlightAndNameToModel(desc)
             elseif desc:IsA("BasePart") then
-                local h = addHighlight(desc)
-                applied[desc] = {Highlights = {h}}
+                addHighlightToPart(desc)
             end
         end
     end)
@@ -118,21 +130,26 @@ end)
 
 -- 监听对象移除
 Workspace.DescendantRemoving:Connect(function(desc)
-    task.defer(function()
-        removeApplied(desc)
-    end)
+    removeHighlightsForInstance(desc)
+    for _, d in ipairs(desc:GetDescendants()) do
+        removeHighlightsForInstance(d)
+    end
 end)
 
--- 启动时扫描已有对象
-for _, obj in ipairs(Workspace:GetDescendants()) do
-    if isShadowEtcher(obj) then
-        if obj:IsA("Model") then
-            addHighlightAndName(obj)
-        elseif obj:IsA("BasePart") then
-            local h = addHighlight(obj)
-            applied[obj] = {Highlights = {h}}
+-- 定期扫描
+spawn(function()
+    while true do
+        if enabled then
+            pcall(scanWorkspaceAndApply)
+        else
+            for inst, _ in pairs(applied) do
+                removeHighlightsForInstance(inst)
+            end
         end
+        task.wait(scanInterval)
     end
-end
+end)
 
-print("ShadowEtcher ESP + 名字标签“灰色斧”（多实例版）已启动。")
+-- 启动立即扫描
+scanWorkspaceAndApply()
+print("ShadowEtcher ESP + 名字标签“灰色斧”（优化版）已启动。")
