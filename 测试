@@ -1,7 +1,4 @@
--- ShadowEtcher ESP (LocalScript)
--- 放在 StarterPlayerScripts / 本地能运行的位置
--- 功能：对名为 "ShadowEtcher" 的模型/部件进行透视与高亮并显示边框
-
+-- ShadowEtcher 名字标签 + ESP 高亮
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -9,126 +6,108 @@ local Workspace = game:GetService("Workspace")
 local localPlayer = Players.LocalPlayer
 
 -- 配置
-local enabled = true            -- 总开关，设为 false 可全部关闭
-local scanInterval = 1.0        -- 扫描间隔（秒），不要太小以免影响性能
-local fillTransparency = 0.6    -- 内部透明度（0 完全不透明，1 完全透明）
-local outlineTransparency = 0.0 -- 边框透明度（0 可见，1 隐形）
-local fillScale = 1.0           -- 高光填充缩放（一般保持 1）
-local highlightColor = Color3.fromRGB(255, 100, 0) -- 填充颜色（橙色，可改）
-local outlineColor = Color3.fromRGB(255, 255, 255) -- 边框颜色（白色，可改）
+local enabled = true
+local scanInterval = 1.0
+local fillTransparency = 0.6
+local outlineTransparency = 0.0
+local highlightColor = Color3.fromRGB(255, 100, 0)
+local outlineColor = Color3.fromRGB(255, 255, 255)
+local nameTextColor = Color3.fromRGB(255, 255, 255)
+local nameTextSize = 18
 
--- 内部表：记录已经添加的高亮实例，便于清理
--- keyed by instance (Model or Part) -> { list of highlight instances }
-local applied = {}
+local applied = {} -- 保存每个对象的 {Highlight, BillboardGui}
 
--- 辅助：为单个 BasePart 添加 Highlight
+-- 为 BasePart 添加高亮
 local function addHighlightToPart(part)
     if not part or not part:IsA("BasePart") then return nil end
-    -- 如果已经处理过该 part，则跳过
     if applied[part] then return end
-
-    -- 新建 Highlight，设置参数
     local h = Instance.new("Highlight")
     h.Adornee = part
     h.Name = "ShadowEtcher_Highlight"
-    h.Parent = part -- parent 在 part 上，方便跟随删除
+    h.Parent = part
     h.FillTransparency = fillTransparency
     h.OutlineTransparency = outlineTransparency
     h.FillColor = highlightColor
     h.OutlineColor = outlineColor
-    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- 确保透视（穿墙可见）
-    -- 记录
-    applied[part] = { h }
+    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    applied[part] = {Highlight = h}
     return h
 end
 
--- 为整个模型（或容器）添加高亮（对所有 BasePart）
-local function addHighlightToModel(model)
-    if not model then return end
-    -- 已经存在记录就跳过（避免重复）
-    if applied[model] then return end
-
-    local list = {}
+-- 为模型添加高亮和名字标签
+local function addHighlightAndNameToModel(model)
+    if not model or applied[model] then return end
+    local highlights = {}
     for _, descendant in ipairs(model:GetDescendants()) do
         if descendant:IsA("BasePart") then
-            -- 若该 part 已被单独标记过，跳过，以 model 为 key 记录整体
-            if not applied[descendant] then
-                local h = Instance.new("Highlight")
-                h.Adornee = descendant
-                h.Name = "ShadowEtcher_Highlight"
-                h.Parent = descendant
-                h.FillTransparency = fillTransparency
-                h.OutlineTransparency = outlineTransparency
-                h.FillColor = highlightColor
-                h.OutlineColor = outlineColor
-                h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                table.insert(list, h)
-                applied[descendant] = { h } -- 也记录单个 part，避免重复
-            end
+            local h = addHighlightToPart(descendant)
+            if h then table.insert(highlights, h) end
         end
     end
-    -- 还为 model 也放一个标记（空表），方便后续移除判断
-    applied[model] = list
-    return list
+    -- 添加 BillboardGui 显示名字
+    local headPart = model:FindFirstChild("Head") or model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+    if headPart then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ShadowEtcher_NameTag"
+        billboard.Adornee = headPart
+        billboard.Size = UDim2.new(0, 100, 0, 25)
+        billboard.StudsOffset = Vector3.new(0, 3, 0) -- 在头顶上方
+        billboard.AlwaysOnTop = true
+        billboard.Parent = headPart
+
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(1,0,1,0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.TextColor3 = nameTextColor
+        textLabel.TextStrokeTransparency = 0
+        textLabel.Font = Enum.Font.SourceSansBold
+        textLabel.TextScaled = true
+        textLabel.Text = "ShadowEtcher"
+        textLabel.Parent = billboard
+
+        applied[model].Billboard = billboard
+    end
+    applied[model] = {Highlights = highlights, Billboard = applied[model] and applied[model].Billboard}
 end
 
--- 移除一个 instance（model 或 part）上的所有高亮
+-- 移除高亮和名字标签
 local function removeHighlightsForInstance(inst)
     if not inst then return end
     local data = applied[inst]
     if data then
-        for _, h in ipairs(data) do
-            if h and h.Parent then
+        if data.Highlight then
+            pcall(function() data.Highlight:Destroy() end)
+        end
+        if data.Highlights then
+            for _, h in ipairs(data.Highlights) do
                 pcall(function() h:Destroy() end)
             end
+        end
+        if data.Billboard then
+            pcall(function() data.Billboard:Destroy() end)
         end
         applied[inst] = nil
     end
 end
 
--- 全局清理（例如关闭开关时）
-local function clearAllHighlights()
-    for inst, _ in pairs(applied) do
-        -- inst 可能已经被销毁，保护性检查
-        if inst and inst.Parent then
-            removeHighlightsForInstance(inst)
-        else
-            -- 如果 inst 已不存在，仍要清理表项
-            applied[inst] = nil
-        end
-    end
-    applied = {}
-end
-
--- 检查一个对象是否符合我们要高亮的目标（名字为 ShadowEtcher）
+-- 判断目标对象
 local function isTargetObject(obj)
     if not obj then return false end
-    -- 如果是模型且模型名匹配
-    if obj:IsA("Model") and obj.Name == "ShadowEtcher" then
-        return true
-    end
-    -- 如果是单个零件直接叫 ShadowEtcher
-    if obj:IsA("BasePart") and obj.Name == "ShadowEtcher" then
-        return true
-    end
-    -- 其他情况：如果对象内存在名为 ShadowEtcher 的子项（容忍某些层级结构）
+    if obj:IsA("Model") and obj.Name == "ShadowEtcher" then return true end
+    if obj:IsA("BasePart") and obj.Name == "ShadowEtcher" then return true end
     for _, d in ipairs(obj:GetDescendants()) do
-        if d.Name == "ShadowEtcher" then
-            return true
-        end
+        if d.Name == "ShadowEtcher" then return true end
     end
     return false
 end
 
--- 对 workspace 整体扫描并对新目标添加高亮
+-- 扫描 Workspace
 local function scanWorkspaceAndApply()
     if not enabled then return end
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        -- 只关心模型或部件
         if (obj:IsA("Model") or obj:IsA("BasePart")) and isTargetObject(obj) then
-            -- 如果是模型，用模型方式添加；如果是部件则只为部件添加
             if obj:IsA("Model") then
-                addHighlightToModel(obj)
+                addHighlightAndNameToModel(obj)
             else
                 addHighlightToPart(obj)
             end
@@ -136,65 +115,38 @@ local function scanWorkspaceAndApply()
     end
 end
 
--- 当新的对象被加入 workspace 时（实时响应）
 Workspace.DescendantAdded:Connect(function(desc)
     if not enabled then return end
-    -- 小延迟以确保模型构建完毕
     task.defer(function()
-        -- 如果整个模型或部件名字是 ShadowEtcher
         if isTargetObject(desc) then
             if desc:IsA("Model") then
-                addHighlightToModel(desc)
+                addHighlightAndNameToModel(desc)
             elseif desc:IsA("BasePart") then
                 addHighlightToPart(desc)
-            else
-                -- 如果不是模型/部件，但包含 ShadowEtcher 子项，尝试找出并标记
-                for _, d in ipairs(desc:GetDescendants()) do
-                    if d:IsA("Model") and d.Name == "ShadowEtcher" then
-                        addHighlightToModel(d)
-                    elseif d:IsA("BasePart") and d.Name == "ShadowEtcher" then
-                        addHighlightToPart(d)
-                    end
-                end
             end
         end
     end)
 end)
 
--- 当对象被移除时，清理记录
 Workspace.DescendantRemoving:Connect(function(desc)
-    -- 若某个模型或部件被移除，移除对应的高亮
     removeHighlightsForInstance(desc)
-    -- 也尝试清理其子项对应的高亮条目
     for _, d in ipairs(desc:GetDescendants()) do
         removeHighlightsForInstance(d)
     end
 end)
 
--- 启动定期扫描（兼容首次运行和漏网之鱼）
 spawn(function()
     while true do
         if enabled then
-            -- 运行一次全局扫描
-            local ok, err = pcall(scanWorkspaceAndApply)
-            if not ok then
-                warn("ShadowEtcher ESP scan error:", err)
-            end
+            pcall(scanWorkspaceAndApply)
         else
-            -- 如果禁用，清理已有高亮
-            clearAllHighlights()
+            for inst, _ in pairs(applied) do
+                removeHighlightsForInstance(inst)
+            end
         end
         task.wait(scanInterval)
     end
 end)
 
--- 方便在运行时控制：在控制台输入以下命令可以开关
--- set enabled = false -- 关闭
--- set enabled = true  -- 开启
--- clearAllHighlights() -- 手动清理
--- 你也可以通过修改顶部配置变量来调整颜色/透明度/扫描间隔
-
--- 启动时立即扫描一次
 scanWorkspaceAndApply()
-
-print("ShadowEtcher ESP 已启动。开关变量：enabled =", enabled)
+print("ShadowEtcher ESP + 名字标签已启动。")
