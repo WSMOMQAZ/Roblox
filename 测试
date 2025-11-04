@@ -1,4 +1,4 @@
--- ShadowEtcher ESP + 名字标签 "灰色斧"（轻量版）
+-- ShadowEtcher ESP + 名字标签 "灰色斧"（多实例优化版）
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 
@@ -12,15 +12,14 @@ local fillTransparency = 0.6
 local outlineTransparency = 0.0
 local nameTextColor = Color3.fromRGB(180, 180, 180)
 local nameTextSize = 18
+local fullModelHighlight = false -- 是否全模型高亮，false = 仅 Head/PrimaryPart
 
--- 保存每个对象的 {Highlight, BillboardGui}
+-- 保存每个 ShadowEtcher 的数据
 local applied = {}
 
--- 为 BasePart 添加 Highlight（仅 Head/PrimaryPart）
+-- 为 BasePart 添加 Highlight
 local function addHighlight(part)
     if not part or not part:IsA("BasePart") then return nil end
-    if applied[part] then return applied[part].Highlight end
-
     local h = Instance.new("Highlight")
     h.Adornee = part
     h.Name = "ShadowEtcher_Highlight"
@@ -30,20 +29,32 @@ local function addHighlight(part)
     h.FillColor = highlightColor
     h.OutlineColor = outlineColor
     h.DepthMode = Enum.HighlightDepthMode.Occluded
-
-    applied[part] = {Highlight = h}
     return h
 end
 
--- 为模型添加高亮和名字标签（仅 Head/PrimaryPart）
+-- 为模型添加高亮和名字标签
 local function addHighlightAndName(model)
     if not model or applied[model] then return end
+    local highlights = {}
 
+    if fullModelHighlight then
+        for _, part in ipairs(model:GetDescendants()) do
+            if part:IsA("BasePart") then
+                table.insert(highlights, addHighlight(part))
+            end
+        end
+    else
+        local mainPart = model:FindFirstChild("Head") or model.PrimaryPart
+        if mainPart then
+            table.insert(highlights, addHighlight(mainPart))
+        end
+    end
+
+    -- 添加名字标签
     local mainPart = model:FindFirstChild("Head") or model.PrimaryPart
+    local billboard
     if mainPart then
-        addHighlight(mainPart)
-
-        local billboard = Instance.new("BillboardGui")
+        billboard = Instance.new("BillboardGui")
         billboard.Name = "ShadowEtcher_NameTag"
         billboard.Adornee = mainPart
         billboard.Size = UDim2.new(0, 100, 0, 25)
@@ -60,9 +71,9 @@ local function addHighlightAndName(model)
         textLabel.TextSize = nameTextSize
         textLabel.Text = "灰色斧"
         textLabel.Parent = billboard
-
-        applied[model] = {Highlight = mainPart.Highlight, Billboard = billboard}
     end
+
+    applied[model] = {Highlights = highlights, Billboard = billboard}
 end
 
 -- 移除高亮和名字标签
@@ -70,8 +81,10 @@ local function removeApplied(inst)
     if not inst then return end
     local data = applied[inst]
     if data then
-        if data.Highlight then
-            pcall(function() data.Highlight:Destroy() end)
+        if data.Highlights then
+            for _, h in ipairs(data.Highlights) do
+                pcall(function() h:Destroy() end)
+            end
         end
         if data.Billboard then
             pcall(function() data.Billboard:Destroy() end)
@@ -80,7 +93,7 @@ local function removeApplied(inst)
     end
 end
 
--- 判断是否为目标对象
+-- 判断是否为 ShadowEtcher
 local function isShadowEtcher(obj)
     if not obj then return false end
     if obj:IsA("Model") and obj.Name == "ShadowEtcher" then return true end
@@ -96,7 +109,8 @@ Workspace.DescendantAdded:Connect(function(desc)
             if desc:IsA("Model") then
                 addHighlightAndName(desc)
             elseif desc:IsA("BasePart") then
-                addHighlight(desc)
+                local h = addHighlight(desc)
+                applied[desc] = {Highlights = {h}}
             end
         end
     end)
@@ -109,15 +123,16 @@ Workspace.DescendantRemoving:Connect(function(desc)
     end)
 end)
 
--- 启动时扫描一次已有对象
+-- 启动时扫描已有对象
 for _, obj in ipairs(Workspace:GetDescendants()) do
     if isShadowEtcher(obj) then
         if obj:IsA("Model") then
             addHighlightAndName(obj)
         elseif obj:IsA("BasePart") then
-            addHighlight(obj)
+            local h = addHighlight(obj)
+            applied[obj] = {Highlights = {h}}
         end
     end
 end
 
-print("ShadowEtcher ESP + 名字标签“灰色斧”（轻量版）已启动。")
+print("ShadowEtcher ESP + 名字标签“灰色斧”（多实例版）已启动。")
