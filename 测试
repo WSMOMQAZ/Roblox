@@ -1,7 +1,7 @@
--- ShadowEtcher 名字标签 + ESP 高亮
+-- ShadowEtcher ESP + 名字标签 "灰色斧"
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local localPlayer = Players.LocalPlayer
 
@@ -12,12 +12,13 @@ local fillTransparency = 0.6
 local outlineTransparency = 0.0
 local highlightColor = Color3.fromRGB(255, 100, 0)
 local outlineColor = Color3.fromRGB(255, 255, 255)
-local nameTextColor = Color3.fromRGB(255, 255, 255)
+local nameTextColor = Color3.fromRGB(180, 180, 180) -- 灰色
 local nameTextSize = 18
 
-local applied = {} -- 保存每个对象的 {Highlight, BillboardGui}
+-- 保存每个对象的 {Highlights, BillboardGui}
+local applied = {}
 
--- 为 BasePart 添加高亮
+-- 为 BasePart 添加 Highlight
 local function addHighlightToPart(part)
     if not part or not part:IsA("BasePart") then return nil end
     if applied[part] then return end
@@ -30,7 +31,7 @@ local function addHighlightToPart(part)
     h.FillColor = highlightColor
     h.OutlineColor = outlineColor
     h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    applied[part] = {Highlight = h}
+    applied[part] = {Highlights = {h}}
     return h
 end
 
@@ -44,30 +45,31 @@ local function addHighlightAndNameToModel(model)
             if h then table.insert(highlights, h) end
         end
     end
-    -- 添加 BillboardGui 显示名字
+
+    -- 添加名字标签
     local headPart = model:FindFirstChild("Head") or model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+    local billboard
     if headPart then
-        local billboard = Instance.new("BillboardGui")
+        billboard = Instance.new("BillboardGui")
         billboard.Name = "ShadowEtcher_NameTag"
         billboard.Adornee = headPart
         billboard.Size = UDim2.new(0, 100, 0, 25)
-        billboard.StudsOffset = Vector3.new(0, 3, 0) -- 在头顶上方
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
         billboard.AlwaysOnTop = true
         billboard.Parent = headPart
 
         local textLabel = Instance.new("TextLabel")
-        textLabel.Size = UDim2.new(1,0,1,0)
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
         textLabel.BackgroundTransparency = 1
         textLabel.TextColor3 = nameTextColor
         textLabel.TextStrokeTransparency = 0
         textLabel.Font = Enum.Font.SourceSansBold
         textLabel.TextScaled = true
-        textLabel.Text = "ShadowEtcher"
+        textLabel.Text = "灰色斧"
         textLabel.Parent = billboard
-
-        applied[model].Billboard = billboard
     end
-    applied[model] = {Highlights = highlights, Billboard = applied[model] and applied[model].Billboard}
+
+    applied[model] = {Highlights = highlights, Billboard = billboard}
 end
 
 -- 移除高亮和名字标签
@@ -75,9 +77,6 @@ local function removeHighlightsForInstance(inst)
     if not inst then return end
     local data = applied[inst]
     if data then
-        if data.Highlight then
-            pcall(function() data.Highlight:Destroy() end)
-        end
         if data.Highlights then
             for _, h in ipairs(data.Highlights) do
                 pcall(function() h:Destroy() end)
@@ -115,6 +114,7 @@ local function scanWorkspaceAndApply()
     end
 end
 
+-- 监听新加入对象
 Workspace.DescendantAdded:Connect(function(desc)
     if not enabled then return end
     task.defer(function()
@@ -128,6 +128,7 @@ Workspace.DescendantAdded:Connect(function(desc)
     end)
 end)
 
+-- 监听对象移除
 Workspace.DescendantRemoving:Connect(function(desc)
     removeHighlightsForInstance(desc)
     for _, d in ipairs(desc:GetDescendants()) do
@@ -135,6 +136,7 @@ Workspace.DescendantRemoving:Connect(function(desc)
     end
 end)
 
+-- 定期扫描
 spawn(function()
     while true do
         if enabled then
@@ -148,5 +150,6 @@ spawn(function()
     end
 end)
 
+-- 启动立即扫描
 scanWorkspaceAndApply()
-print("ShadowEtcher ESP + 名字标签已启动。")
+print("ShadowEtcher ESP + 名字标签“灰色斧”已启动。")
