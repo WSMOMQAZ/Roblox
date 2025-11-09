@@ -2,23 +2,37 @@ local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 
--- 获取所有ShadowEtcher对象
-local folder = workspace:WaitForChild("World"):WaitForChild("LooseItems"):WaitForChild("ShadowEtcher")
+-- 🔍 递归搜索 workspace 下所有叫 "ShadowEtcher" 的对象
+local function getAllShadowEtchers()
+    local results = {}
+    local function search(folder)
+        for _, obj in ipairs(folder:GetChildren()) do
+            if obj.Name == "ShadowEtcher" then
+                table.insert(results, obj)
+            end
+            -- 如果是文件夹、模型或容器，则继续搜索
+            if #obj:GetChildren() > 0 then
+                search(obj)
+            end
+        end
+    end
+    search(workspace)
+    return results
+end
 
--- 查找最近的ShadowEtcher
+-- 🧭 找到最近的 ShadowEtcher
 local function getNearestShadowEtcher()
     local nearest
     local shortestDistance = math.huge
+    local etchers = getAllShadowEtchers()
 
-    for _, obj in ipairs(folder:GetChildren()) do
-        if obj:IsA("Model") or obj:IsA("Part") then
-            local root = obj:FindFirstChild("PrimaryPart") or obj:FindFirstChildWhichIsA("BasePart")
-            if root then
-                local distance = (hrp.Position - root.Position).Magnitude
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    nearest = root
-                end
+    for _, obj in ipairs(etchers) do
+        local root = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+        if root then
+            local distance = (hrp.Position - root.Position).Magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                nearest = root
             end
         end
     end
@@ -26,13 +40,13 @@ local function getNearestShadowEtcher()
     return nearest, shortestDistance
 end
 
--- 执行传送
-local nearestEtcher, dist = getNearestShadowEtcher()
-if nearestEtcher then
-    hrp.CFrame = CFrame.new(nearestEtcher.Position + Vector3.new(0, 5, 0)) -- 传送到物体上方5格
+-- 🚀 传送
+local target, distance = getNearestShadowEtcher()
+if target then
+    hrp.CFrame = CFrame.new(target.Position + Vector3.new(0, 5, 0))
     game.StarterGui:SetCore("SendNotification", {
         Title = "传送成功",
-        Text = "已传送到最近的 ShadowEtcher（距离：" .. math.floor(dist) .. "）",
+        Text = "已传送到最近的 ShadowEtcher（距离：" .. math.floor(distance) .. "）",
         Duration = 4
     })
 else
