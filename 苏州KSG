@@ -1,6 +1,44 @@
-∞
-∞
-∞
-∞
-∞
-∞
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+-- 获取所有ShadowEtcher对象
+local folder = workspace:WaitForChild("World"):WaitForChild("LooseItems"):WaitForChild("ShadowEtcher")
+
+-- 查找最近的ShadowEtcher
+local function getNearestShadowEtcher()
+    local nearest
+    local shortestDistance = math.huge
+
+    for _, obj in ipairs(folder:GetChildren()) do
+        if obj:IsA("Model") or obj:IsA("Part") then
+            local root = obj:FindFirstChild("PrimaryPart") or obj:FindFirstChildWhichIsA("BasePart")
+            if root then
+                local distance = (hrp.Position - root.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    nearest = root
+                end
+            end
+        end
+    end
+
+    return nearest, shortestDistance
+end
+
+-- 执行传送
+local nearestEtcher, dist = getNearestShadowEtcher()
+if nearestEtcher then
+    hrp.CFrame = CFrame.new(nearestEtcher.Position + Vector3.new(0, 5, 0)) -- 传送到物体上方5格
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "传送成功",
+        Text = "已传送到最近的 ShadowEtcher（距离：" .. math.floor(dist) .. "）",
+        Duration = 4
+    })
+else
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "传送失败",
+        Text = "未找到任何 ShadowEtcher！",
+        Duration = 4
+    })
+end
