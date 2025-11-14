@@ -1,8 +1,10 @@
 {
-  "WSMOMQAZ-1234": { "user": "wsomoQaz", "expire": "2099-12-31" },
-  "VIP-KEY-001":   { "user": "Tester",   "expire": "2026-01-01" },
-  "vpn":           { "user": "Tester",   "expire": "2025-01-01" },
-  "KSG":           { "user": "KaErcai",  "expire": "2026-01-01" },
-  "LQPER0mWdFWk5IKACxIJ": { "user": "most", "expire": "2025-12-01" },
-  "icML":          { "user": "xiaobao_a1", "expire": "2025-11-10" }
+  "ABC-123": {
+    "user": "wsomoQaz",
+    "expire": "2099-12-31"
+  },
+  "VIP-001": {
+    "user": "TestUser",
+    "expire": "2025-01-01"
+  }
 }
