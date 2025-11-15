@@ -1,6 +1,16 @@
 {
   "versions": [
     {
+      "version": "1.6",
+      "date": "2025-11-15",
+      "changelog": [
+        "esp LightEtcher",
+        "自动传送"
+      ]
+    },
+{
+  "versions": [
+    {
       "version": "1.5",
       "date": "2025-11-08",
       "changelog": [
