@@ -1,0 +1,666 @@
+{
+local v_u_1 = game:GetService("Players").LocalPlayer
+local v_u_2 = v_u_1:GetMouse()
+local v_u_3 = workspace.CurrentCamera
+local v_u_4 = v_u_1.PlayerGui
+local v_u_5 = game:GetService("TweenService")
+local v6 = game:GetService("ReplicatedStorage")
+local v_u_7 = game:GetService("UserInputService")
+local v8 = game:GetService("RunService")
+local v_u_9 = game:GetService("GuiService")
+local v_u_10 = v_u_4:WaitForChild("GuiCore")
+local v_u_11 = v6:WaitForChild("Modules")
+local v_u_12 = v6:WaitForChild("Events")
+local v_u_13 = require(v_u_11:WaitForChild("VFX"))
+local v_u_14 = require(v_u_4:WaitForChild("Plot"):WaitForChild("Core"))
+local v_u_15 = require(v_u_11.Sounds)
+local v_u_16 = require(v_u_11.Projectiles)
+local v_u_17 = require(v_u_11.Cooldowns)
+local v_u_18 = require(v_u_11.InputHandler)
+local v_u_19 = v_u_13:CreateTransition("loadTransition", 0)
+task.delay(5, function()
+	-- upvalues: (copy) v_u_19, (copy) v_u_13
+	if v_u_19 then
+		v_u_13:RemoveTransition(v_u_19, 1)
+	end
+end)
+local v_u_20 = v_u_1:WaitForChild("Values")
+local v_u_21 = v_u_4:WaitForChild("UserGui")
+local v_u_22 = v_u_20:WaitForChild("Loaded")
+local v_u_23 = v_u_4:WaitForChild("InterfaceGui")
+local v_u_24 = v_u_21:WaitForChild("Topbar").Frame
+local v_u_25 = v_u_23:WaitForChild("GrapplerCursor")
+local v_u_26 = v_u_4:WaitForChild("HUD")
+local v_u_27 = v_u_21:WaitForChild("Crosshair")
+local v_u_28 = require(v_u_10.SettingsFrame)
+local v_u_29 = require(v_u_10["RobuxFrameV2.5"])
+local v30 = require(v_u_11.Selectors)
+local v_u_31 = require(v_u_11.Currency)
+local v_u_32 = require(v_u_11.ClientToolCore)
+local v_u_33 = require(v_u_4:WaitForChild("GuiCore"))
+local v34 = require(script.CustomReset)
+if v_u_1.Character then
+	require(v_u_4:WaitForChild("Grab")):Setup()
+	require(v_u_4:WaitForChild("Placement")):Setup()
+	require(v_u_10.Proximity):Setup(v_u_21)
+	require(v_u_10.Inventory):Setup()
+	require(v_u_10.PowerBar):Setup()
+	require(v_u_10.ShopUI):Setup()
+	require(v_u_10.InstanceText):Setup()
+	require(v_u_10.ContractFrame):Setup()
+	require(v_u_10.MinimapUI):Setup()
+	require(v_u_10.TransferFrame)
+	require(v_u_10.MapBoardUI)
+	require(v_u_10.MailboxFrame)
+	require(v_u_10.MachineFixFrame)
+	require(v_u_10.Bestiary)
+	require(v_u_10.QuestManager2)
+	require(v_u_10.CharacterFrame):Setup()
+	require(v_u_10.AmmoFrame):Setup()
+	require(v_u_10.CraftMenuHandler)
+	require(v_u_10.Clock):Setup()
+	require(v_u_10.TagModules.HoverGradient):Setup()
+	require(v_u_10.TagModules.Shine):Setup()
+	require(v_u_10.TagModules.ProductPurchaseButton):Setup()
+	require(v_u_10.TagModules.HoverScale):Setup()
+	require(v_u_10.TagModules.HoverShine):Setup()
+	require(v_u_10.TagModules.ClickSound):Setup()
+	v_u_28:Setup()
+	v_u_29:Setup()
+	task.defer(function()
+		-- upvalues: (copy) v_u_13
+		v_u_13:PreloadImages()
+	end)
+	v_u_1.Character.ChildRemoved:Connect(function(p35)
+		-- upvalues: (copy) v_u_25, (copy) v_u_7
+		if p35:IsA("Tool") and string.find(p35.Name:lower(), "hookling") then
+			task.wait()
+			v_u_25.Visible = false
+			v_u_7.MouseIconEnabled = true
+		end
+	end)
+end
+game:GetService("TextChatService").ChatWindowConfiguration.HorizontalAlignment = v_u_4.Menu.Enabled and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
+require(v_u_10.RestartFrame):Check()
+workspace.ServerData.IsRestarting.Changed:Connect(function()
+	-- upvalues: (copy) v_u_10
+	require(v_u_10.RestartFrame):Check()
+end)
+function DialoguePromptInit(p36)
+	-- upvalues: (copy) v_u_33
+	if typeof(p36) ~= "table" then
+		return v_u_33.DialoguePrompt:Get()
+	end
+	v_u_33.DialoguePrompt:Call(p36)
+end
+function OnMessage(p37)
+	-- upvalues: (copy) v_u_33
+	v_u_33.Messages:Call(p37)
+end
+function CallCutscene(p38, ...)
+	-- upvalues: (copy) v_u_11
+	require(v_u_11.Cutscenes):Call(p38, ...)
+end
+function OnChoicePrompt(p39, p40)
+	-- upvalues: (copy) v_u_10
+	require(v_u_10.OptionFrame):Call(p39, p40)
+end
+local v_u_41 = false
+function ToggleFRMarker(p42)
+	-- upvalues: (ref) v_u_41, (copy) v_u_5, (copy) v_u_7, (copy) v_u_27
+	local v43 = workspace.MouseIgnore:FindFirstChild("_FRMarker")
+	if v_u_41 == p42 then
+		return v43
+	end
+	v_u_41 = p42
+	if p42 and not v43 then
+		v43 = script.Marker:Clone()
+		v43.Name = "_FRMarker"
+		v43.BillboardGui.Enabled = true
+		v43.SurfaceGui.Enabled = true
+		v43.Parent = workspace.MouseIgnore
+	elseif not p42 and v43 then
+		local v_u_44 = v43:Clone()
+		task.delay(1, function()
+			-- upvalues: (copy) v_u_44
+			if v_u_44 then
+				v_u_44:Destroy()
+			end
+		end)
+		v_u_44.Name = "_FakeFRMarker"
+		v_u_44.Parent = workspace.MouseIgnore
+		for _, v45 in v_u_44:GetDescendants() do
+			if v45:IsA("ImageLabel") then
+				v_u_5:Create(v45, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+					["ImageTransparency"] = 1,
+					["ImageColor3"] = Color3.new(1, 0, 0)
+				}):Play()
+			end
+		end
+		v43:Destroy()
+		v43 = nil
+	end
+	local v46 = v_u_7
+	local v47 = not v_u_27.Visible
+	if v47 then
+		v47 = v43 == nil
+	end
+	v46.MouseIconEnabled = v47
+	return v43
+end
+function ChangeFRMarkerColor(p48)
+	-- upvalues: (copy) v_u_5
+	local v49 = workspace.MouseIgnore:FindFirstChild("_FRMarker")
+	if v49 then
+		local v50 = p48 or Color3.new(1, 1, 1)
+		for _, v51 in v49:GetDescendants() do
+			if v51:IsA("ImageLabel") then
+				v_u_5:Create(v51, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+					["ImageColor3"] = v50
+				}):Play()
+			end
+		end
+	end
+end
+function UpdateFieldOfView()
+	-- upvalues: (copy) v_u_3, (copy) v_u_20
+	v_u_3.FieldOfView = v_u_20.FieldOfView.Value
+	v_u_3:SetAttribute("DefaultFOV", v_u_20.FieldOfView.Value)
+end
+local function v52()
+	-- upvalues: (copy) v_u_26, (copy) v_u_22
+	v_u_26.Frame.Background.Visible = v_u_22.Value
+	v_u_26.TopRight.Visible = v_u_22.Value
+end
+function ReplicateProjectile(p53, p54)
+	-- upvalues: (copy) v_u_16
+	if p53 and p54 then
+		v_u_16:LaunchPhysics(p53, p54)
+	end
+end
+function AddCooldown(p55, p56, p57)
+	-- upvalues: (copy) v_u_17
+	v_u_17:Add(p55, p56, p57, true)
+end
+local v_u_58 = v_u_20:WaitForChild("Cash").Value
+local v_u_59 = v_u_20:WaitForChild("Candy").Value
+local v_u_60 = v_u_20:WaitForChild("Carrot").Value
+local v_u_61 = v_u_20:WaitForChild("Snowflake").Value
+local function v_u_67(p62, p63, p_u_64, p_u_65)
+	-- upvalues: (copy) v_u_21, (copy) v_u_5, (copy) v_u_24
+	local v_u_66 = script.CashIncrement:Clone()
+	v_u_66.UIStroke.Color = p63
+	v_u_66.Text = p62
+	v_u_66.AnchorPoint = Vector2.new(0.5, 0.5)
+	v_u_66.TextStrokeTransparency = 1
+	v_u_66.Position = p_u_64 and UDim2.fromScale(math.random(40, 60) / 100, math.random(40, 60) / 100) or UDim2.fromOffset(p_u_65.AbsolutePosition.X + p_u_65.AbsoluteSize.X / 2, v_u_66.Position.Y.Offset - v_u_66.Size.Y.Offset / 2)
+	v_u_66.TextColor3 = p_u_64 and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+	v_u_66.Size = p_u_64 and UDim2.fromOffset(100, 15) or UDim2.fromOffset(200, 30)
+	v_u_66.Parent = v_u_21
+	task.defer(function()
+		-- upvalues: (copy) p_u_64, (ref) v_u_5, (copy) v_u_66, (copy) p_u_65, (ref) v_u_24
+		if p_u_64 then
+			v_u_5:Create(v_u_66, TweenInfo.new(0.75), {
+				["Size"] = UDim2.fromOffset(math.random(200, 400), math.random(30, 60)),
+				["TextTransparency"] = 0
+			}):Play()
+			task.wait(0.75)
+			v_u_5:Create(v_u_66, TweenInfo.new(1.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+				["Position"] = UDim2.fromOffset(p_u_65.AbsolutePosition.X + p_u_65.AbsoluteSize.X / 2, v_u_24.Position.Y.Offset + v_u_24.Size.Y.Offset / 2),
+				["Size"] = UDim2.fromOffset(200, 30),
+				["TextTransparency"] = 1
+			}):Play()
+			task.wait(1.5)
+			v_u_66:Destroy()
+		else
+			v_u_66.TextTransparency = 1
+			v_u_66.UIStroke.Transparency = 1
+			v_u_5:Create(v_u_66, TweenInfo.new(0.75), {
+				["TextTransparency"] = 0
+			}):Play()
+			v_u_5:Create(v_u_66.UIStroke, TweenInfo.new(0.75), {
+				["Transparency"] = 0
+			}):Play()
+			v_u_5:Create(v_u_66, TweenInfo.new(1), {
+				["Position"] = UDim2.fromOffset(p_u_65.AbsolutePosition.X + p_u_65.AbsoluteSize.X / 2, v_u_66.Position.Y.Offset + v_u_66.Size.Y.Offset * 1.5)
+			}):Play()
+			task.wait(1)
+			v_u_5:Create(v_u_66, TweenInfo.new(1.5), {
+				["TextTransparency"] = 1
+			}):Play()
+			v_u_5:Create(v_u_66.UIStroke, TweenInfo.new(1.5), {
+				["Transparency"] = 1
+			}):Play()
+			task.wait(1.5)
+			v_u_66:Destroy()
+		end
+	end)
+end
+function OnCarrotUpdate()
+	-- upvalues: (copy) v_u_20, (ref) v_u_60, (copy) v_u_4, (copy) v_u_15, (copy) v_u_67, (copy) v_u_24, (copy) v_u_33
+	local v68 = v_u_20.Carrot.Value
+	v_u_60 = v_u_60 or v68
+	if v_u_60 < v68 then
+		local v69 = v68 - v_u_60
+		while v69 > 0 do
+			task.wait(math.random(5, 15) / 100)
+			if not (v_u_4 and v_u_4:FindFirstChild("Menu")) then
+				return
+			end
+			if not v_u_4.Menu.Enabled then
+				v_u_15:PlaySound(script.CandyPop)
+			end
+			local v70 = math.random
+			local v71 = 1
+			local v72 = v69 > 20 and v69 / 4
+			if not v72 then
+				if v69 > 10 then
+					v72 = v69 / 2 or v69
+				else
+					v72 = v69
+				end
+			end
+			local v73 = v70(v71, v72)
+			v69 = v69 - v73
+			v_u_67(("+ \240\159\165\149 %*"):format(v73), Color3.new(1, 1, 0), true, v_u_24.Carrot)
+		end
+	elseif v68 < v_u_60 then
+		v_u_67(("- \240\159\165\149 %*"):format(v_u_60 - v68), Color3.new(0, 0, 0), false, v_u_24.Carrot)
+	end
+	v_u_60 = v68
+	v_u_24.Carrot.Text = ("\240\159\165\149 %*"):format(v68)
+	v_u_24.Carrot.Visible = v68 > 0
+	v_u_33.Tips:Add(v_u_24.Carrot, {
+		["Text"] = ("\240\159\165\149 %*"):format(v68)
+	})
+end
+function OnCandyUpdate()
+	-- upvalues: (copy) v_u_20, (ref) v_u_59, (copy) v_u_4, (copy) v_u_15, (copy) v_u_67, (copy) v_u_24, (copy) v_u_33
+	local v74 = v_u_20.Candy.Value
+	v_u_59 = v_u_59 or v74
+	local v75
+	if v_u_59 < v74 then
+		v75 = v74 - v_u_59
+	else
+		v75 = false
+	end
+	local v76
+	if v74 < v_u_59 then
+		v76 = v_u_59 - v74
+	else
+		v76 = false
+	end
+	if v75 then
+		while v75 > 0 do
+			task.wait(math.random(5, 15) / 100)
+			if not (v_u_4 and v_u_4:FindFirstChild("Menu")) then
+				return
+			end
+			if not v_u_4.Menu.Enabled then
+				v_u_15:PlaySound(script.CandyPop)
+			end
+			local v77 = math.random
+			local v78 = 1
+			local v79 = v75 > 20 and v75 / 4
+			if not v79 then
+				if v75 > 10 then
+					v79 = v75 / 2 or v75
+				else
+					v79 = v75
+				end
+			end
+			local v80 = v77(v78, v79)
+			v75 = v75 - v80
+			v_u_67(("+ \240\159\141\172 %*"):format(v80), Color3.new(0, 0, 0), true, v_u_24.Candy)
+		end
+	elseif v76 then
+		v_u_67(("- \240\159\141\172 %*"):format(v76), Color3.new(0, 0, 0), false, v_u_24.Candy)
+	end
+	v_u_59 = v74
+	v_u_24.Candy.Text = ("\240\159\141\172 %*"):format(v74)
+	v_u_24.Candy.Visible = v74 > 0
+	v_u_33.Tips:Add(v_u_24.Candy, {
+		["Text"] = ("\240\159\141\172 %*"):format(v74)
+	})
+end
+function OnSnowflakeUpdate()
+	-- upvalues: (copy) v_u_20, (ref) v_u_61, (copy) v_u_4, (copy) v_u_15, (copy) v_u_67, (copy) v_u_24, (copy) v_u_33
+	local v81 = v_u_20.Snowflake.Value
+	v_u_61 = v_u_61 or v81
+	if v_u_61 < v81 then
+		local v82 = v81 - v_u_61
+		while v82 > 0 do
+			task.wait(math.random(5, 15) / 100)
+			if not (v_u_4 and v_u_4:FindFirstChild("Menu")) then
+				return
+			end
+			if not v_u_4.Menu.Enabled then
+				v_u_15:PlaySound(script.CandyPop)
+			end
+			local v83 = math.random
+			local v84 = 1
+			local v85 = v82 > 20 and v82 / 4
+			if not v85 then
+				if v82 > 10 then
+					v85 = v82 / 2 or v82
+				else
+					v85 = v82
+				end
+			end
+			local v86 = v83(v84, v85)
+			v82 = v82 - v86
+			v_u_67(("+ \226\157\132\239\184\143 %*"):format(v86), Color3.new(1, 1, 0), true, v_u_24.Snowflake)
+		end
+	elseif v81 < v_u_61 then
+		v_u_67(("- \226\157\132\239\184\143 %*"):format(v_u_61 - v81), Color3.new(0, 0, 0), false, v_u_24.Snowflake)
+	end
+	v_u_61 = v81
+	v_u_24.Snowflake.Text = ("\226\157\132\239\184\143 %*"):format(v81)
+	v_u_24.Snowflake.Visible = v81 > 0
+	v_u_33.Tips:Add(v_u_24.Snowflake, {
+		["Text"] = ("\226\157\132\239\184\143 %*"):format(v81)
+	})
+end
+function OnCashUpdate()
+	-- upvalues: (copy) v_u_20, (copy) v_u_33, (copy) v_u_26, (ref) v_u_58, (copy) v_u_31, (copy) v_u_21, (copy) v_u_5
+	local v87 = v_u_20.Cash.Value
+	v_u_33.Tips:Add(v_u_26.TopRight.Cash, {
+		["Text"] = ("$%*"):format(v87)
+	})
+	v_u_58 = v_u_58 or v87
+	v_u_26.TopRight.Cash.TextLabel.Text = ("$%*"):format((v_u_31:Abreviate(v87)))
+	if v_u_58 < v87 or v87 < v_u_58 then
+		local v_u_88 = script.CashIncrement:Clone()
+		v_u_88.Position = UDim2.new(0, v_u_26.TopRight.Cash.AbsolutePosition.X + v_u_26.TopRight.Cash.AbsoluteSize.X / 2, 0, v_u_88.Position.Y.Offset)
+		v_u_88.Parent = v_u_21
+		if v_u_58 < v87 then
+			v_u_88.Text = "+$" .. v_u_31:Abreviate(v87 - v_u_58)
+			v_u_88.TextColor3 = Color3.new(0, 1, 0)
+			v_u_88.UIStroke.Color = Color3.new(0, 0, 0)
+		elseif v87 < v_u_58 then
+			v_u_88.Text = "-$" .. v_u_31:Abreviate(v_u_58 - v87)
+			v_u_88.TextColor3 = Color3.new(1, 0, 0)
+			v_u_88.UIStroke.Color = Color3.new(0, 0, 0)
+		end
+		v_u_5:Create(v_u_88, TweenInfo.new(3, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), {
+			["TextTransparency"] = 1,
+			["Position"] = UDim2.new(0, v_u_26.TopRight.Cash.AbsolutePosition.X + v_u_26.TopRight.Cash.AbsoluteSize.X / 2, 0, v_u_88.Position.Y.Offset - 20)
+		}):Play()
+		v_u_5:Create(v_u_88.UIStroke, TweenInfo.new(3, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), {
+			["Transparency"] = 1
+		}):Play()
+		task.delay(3, function()
+			-- upvalues: (copy) v_u_88
+			v_u_88:Destroy()
+		end)
+	end
+	v_u_58 = v87
+end
+local v89 = v_u_12.Dialogue
+v89.Prompt.OnClientEvent:Connect(DialoguePromptInit)
+v89.Prompt.Event.Event:Connect(DialoguePromptInit)
+v89.Get.OnClientInvoke = DialoguePromptInit
+v89.Get.Function.OnInvoke = DialoguePromptInit
+v_u_12.Message.OnClientEvent:Connect(OnMessage)
+v_u_12.Message.Event.Event:Connect(OnMessage)
+v_u_12.CallCommands.OnClientEvent:Connect(function(p90)
+	-- upvalues: (copy) v_u_23
+	if typeof(p90) == "string" then
+		if p90 == "Enchantlist" then
+			v_u_23.EnchantlistFrame.Visible = true
+		end
+	end
+end)
+v_u_24.Parent.Enabled = v_u_21.Enabled
+v_u_21:GetPropertyChangedSignal("Enabled"):Connect(function()
+	-- upvalues: (copy) v_u_24, (copy) v_u_21
+	v_u_24.Parent.Enabled = v_u_21.Enabled
+end)
+v_u_12.CallCutscene.OnClientEvent:Connect(CallCutscene)
+v_u_12.PlaySound.OnClientEvent:Connect(function(...)
+	-- upvalues: (copy) v_u_11
+	require(v_u_11.Sounds):PlaySound(...)
+end)
+v_u_12.CallContract.OnClientEvent:Connect(function(p91, p92)
+	-- upvalues: (copy) v_u_10
+	require(v_u_10.ContractFrame):Call(p91, p92)
+end)
+v_u_12.CallContract.Event.Event:Connect(function(p93, p94)
+	-- upvalues: (copy) v_u_10
+	require(v_u_10.ContractFrame):Call(p93, p94)
+end)
+v_u_12.Moderation.DisplaySpecialPermsList.OnClientEvent:Connect(function(p95)
+	-- upvalues: (copy) v_u_12
+	if typeof(p95) == "table" then
+		warn("-----SPECIAL PERMISSIONS-----")
+		local v96 = true
+		for v97, v98 in pairs(p95) do
+			local v99 = v98.RegistredName or "???"
+			local v100 = v98.Rank or "???"
+			local v101 = warn
+			local v102 = string.format
+			local v103 = v98.ContentCreator and true or false
+			v101(v102("[%s]: RegName: %s, Rank: %s, IsYoutuber: %s", v97, v99, v100, (tostring(v103))))
+			v96 = false
+		end
+		if v96 then
+			warn("*Empty*")
+		end
+		warn("-----------------------------")
+		warn("\'RegName\' is the name Player had at the time they were added to Special ranks.")
+		v_u_12.Message.Event:Fire({
+			["Text"] = "Check your output (F9)",
+			["Color"] = "yellow"
+		})
+	end
+end)
+v_u_12.InitiatePlotSelection.OnClientEvent:Connect(function(p104)
+	-- upvalues: (copy) v_u_21, (copy) v_u_14
+	v_u_21.Enabled = false
+	v_u_14:Setup()
+	v_u_14:StartCamera()
+	v_u_14:InitSelection("LandAgency", p104)
+end)
+v_u_12.SelectPlot.Event:Connect(function(_, p105)
+	-- upvalues: (copy) v_u_21, (copy) v_u_14
+	if p105 == "LandAgency" then
+		v_u_21.Enabled = true
+		v_u_14:StopCamera()
+	end
+end)
+v_u_12.ChoicePrompt.OnClientEvent:Connect(OnChoicePrompt)
+v_u_12.ChoicePrompt.Event.Event:Connect(OnChoicePrompt)
+v_u_26.Frame.Background.SettingsCanvas.Settings.Activated:Connect(function()
+	-- upvalues: (copy) v_u_28, (copy) v_u_23
+	v_u_28:Toggle(not v_u_23.SettingsFrame.Visible)
+end)
+v_u_26.Frame.Background.ShopCanvas.Shop.Activated:Connect(function()
+	-- upvalues: (copy) v_u_29, (copy) v_u_23
+	v_u_29:Toggle(not v_u_23["RobuxFrameV2.5"].Visible)
+end)
+v_u_12.Projectiles.ReplicateProjectile.OnClientEvent:Connect(ReplicateProjectile)
+v_u_12.AddCooldown.Event:Connect(AddCooldown)
+v_u_20.Cash:GetPropertyChangedSignal("Value"):Connect(OnCashUpdate)
+OnCashUpdate()
+v_u_24.Candy.Visible = workspace.ServerData.Halloween.Value
+if workspace.ServerData.Halloween.Value then
+	OnCandyUpdate()
+	v_u_20.Candy:GetPropertyChangedSignal("Value"):Connect(OnCandyUpdate)
+end
+v_u_24.Carrot.Visible = workspace.ServerData.Easter.Value
+if workspace.ServerData.Easter.Value then
+	OnCarrotUpdate()
+	v_u_20.Carrot:GetPropertyChangedSignal("Value"):Connect(OnCarrotUpdate)
+end
+v_u_24.Snowflake.Visible = workspace.ServerData.Christmas.Value
+if workspace.ServerData.Christmas.Value then
+	OnSnowflakeUpdate()
+	v_u_20.Snowflake:GetPropertyChangedSignal("Value"):Connect(OnSnowflakeUpdate)
+end
+v_u_18:CreateAction("ToolUse", Enum.UserInputType.MouseButton1, Enum.KeyCode.ButtonR2, {
+	["Display"] = "Use Tool",
+	["Category"] = "Inventory"
+})
+v_u_18:ConnectToAction("ToolUse", function(p106)
+	-- upvalues: (copy) v_u_32
+	v_u_32.ToolInputChanged:Fire(p106)
+	if p106 then
+		v_u_32.AttackInput:Fire()
+	end
+end)
+v_u_18:CreateAction("ToolInspect", Enum.KeyCode.Y, Enum.KeyCode.DPadLeft, {
+	["Display"] = "Inspect Tool",
+	["Category"] = "Inventory"
+})
+v_u_18:ConnectToAction("ToolInspect", function(p107)
+	-- upvalues: (copy) v_u_32
+	if p107 then
+		v_u_32.InspectInput:Fire()
+	end
+end)
+v_u_18:CreateAction("UnmountRod", Enum.KeyCode.E, Enum.KeyCode.DPadLeft, {
+	["Display"] = "Unmount",
+	["Category"] = "Inventory"
+})
+v_u_18:ConnectToAction("UnmountRod", function(p108)
+	-- upvalues: (copy) v_u_1
+	if p108 then
+		local v109 = (v_u_1.Character or v_u_1.CharacterAdded:Wait()):FindFirstChildOfClass("Tool")
+		if v109 then
+			if v109:GetAttribute("Mounted") then
+				if v109:FindFirstChild("UnmountRod") then
+					v109:FindFirstChild("UnmountRod"):FireServer()
+				end
+			end
+		else
+			return
+		end
+	else
+		return
+	end
+end)
+v_u_18:CreateAction("UINavigation", Enum.KeyCode.A, Enum.KeyCode.ButtonSelect, {
+	["Display"] = "UI Navigation",
+	["ControllerOnly"] = true
+})
+v_u_7.InputBegan:Connect(function(p110)
+	-- upvalues: (copy) v_u_24, (copy) v_u_18, (copy) v_u_7, (copy) v_u_21, (copy) v_u_9, (copy) v_u_12
+	v_u_24.ControllerTip.Visible = _G.platform == "console"
+	v_u_24.ControllerTip.Image = v_u_18:GetControllerImageForAction("UINavigation")
+	if not v_u_7:GetFocusedTextBox() and (_G.platform == "console" and v_u_21.Enabled) then
+		if p110.KeyCode.Name == v_u_18:GetActionKeyCodeName("UINavigation", true) then
+			if v_u_9.SelectedObject then
+				v_u_18:ControllerUISelect(nil)
+				return
+			end
+			v_u_12.Message.Event:Fire({
+				["Text"] = "Press again to unselect. (UI)",
+				["Color"] = "yellow"
+			})
+			v_u_18:ControllerUISelect(v_u_24.Inventory)
+		end
+	end
+end)
+v_u_33.SideTips.Callback.Event:Connect(function(p111, p112)
+	-- upvalues: (copy) v_u_32
+	if p112 == "Tool" then
+		if p111 == "Use" then
+			v_u_32.AttackInput:Fire()
+		elseif p111 == "Inspect" then
+			v_u_32.InspectInput:Fire()
+		end
+	else
+		return
+	end
+end)
+local v_u_113 = v30.new("Highlight", {
+	["Name"] = "HitSelector",
+	["DepthMode"] = Enum.HighlightDepthMode.Occluded,
+	["FillTransparency"] = 1,
+	["OutlineTransparency"] = 0
+})
+v8:BindToRenderStep("HitSelectorUpdate", Enum.RenderPriority.Input.Value + 1, function()
+	-- upvalues: (copy) v_u_1, (copy) v_u_32, (copy) v_u_113, (copy) v_u_2, (copy) v_u_3
+	local v114 = v_u_1.Character
+	local v115
+	if v114 then
+		v115 = v114:FindFirstChild("HumanoidRootPart")
+	else
+		v115 = v114
+	end
+	if v115 then
+		v115 = v114:FindFirstChildOfClass("Tool")
+	end
+	local v116
+	if v115 then
+		v116 = v115:GetAttribute("Category")
+	else
+		v116 = v115
+	end
+	if v116 == "Miner" or v116 == "Lumber" then
+		local v117, v118 = v_u_32:GetTarget()
+		if v_u_32:CanHit(v114, v115, v118, v117) then
+			v_u_113:Select(v117)
+		else
+			v_u_113:Select()
+		end
+	elseif v116 == "Fisher" then
+		local v119 = v_u_32:WaterCast(v_u_2.UnitRay.Origin, (_G.platform ~= "pc" and v_u_3.CFrame.LookVector or v_u_2.UnitRay.Direction) * 300)
+		local v120 = ToggleFRMarker
+		local v121
+		if v119 == nil then
+			v121 = false
+		else
+			v121 = not v114:GetAttribute("Fishing")
+		end
+		local v122 = v120(v121)
+		if v122 then
+			v122.CFrame = CFrame.new(v119.Position, v119.Position + v119.Normal) * CFrame.Angles(-1.5707963267948966, 0, 0)
+			local v123 = ChangeFRMarkerColor
+			local v124 = not v_u_32:CanFish(v114, v115, v119.Position)
+			if v124 then
+				v124 = Color3.new(1, 0, 0)
+			end
+			v123(v124)
+		end
+	else
+		ToggleFRMarker(false)
+		v_u_113:Select()
+		return
+	end
+end)
+v_u_1:GetAttributeChangedSignal("CurrentZone"):Connect(function()
+	-- upvalues: (copy) v_u_1
+	if v_u_1:GetAttribute("CurrentZone") == "MagmaCaveCursed" then
+		OnMessage({
+			["Text"] = "The curse neutralizes Tool Reapers, beware.",
+			["Color"] = "purple"
+		})
+	end
+end)
+v_u_18:CreateAction("ControllerCancel", Enum.KeyCode.A, Enum.KeyCode.ButtonB, {
+	["Hidden"] = true,
+	["ControllerOnly"] = true
+})
+v_u_9.AutoSelectGuiEnabled = false
+v34:Init()
+require(v_u_10.Quotes):Init()
+UpdateFieldOfView()
+v_u_26.Frame.Background.Visible = v_u_22.Value
+v_u_26.TopRight.Visible = v_u_22.Value
+v_u_20.FieldOfView.Changed:Connect(UpdateFieldOfView)
+v_u_22:GetPropertyChangedSignal("Value"):Connect(v52)
+if v_u_19 then
+	v_u_13:RemoveTransition(v_u_19, 1)
+end
+local v_u_125 = game:GetService("TextChatService").TextChannels.RBXSystem
+v6.Events.ChatMessage.OnClientEvent:Connect(function(p126)
+	-- upvalues: (copy) v_u_125
+	v_u_125:DisplaySystemMessage(p126)
+end)
+
+
+
+
+
+}
